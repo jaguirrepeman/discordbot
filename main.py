@@ -49,7 +49,7 @@ async def procesar_y_enviar_mensaje():
         print("Procesando Pokémon...")
         # Cargar la lista de Pokémon
         mensaje = get_new_pokemons()
-        #mensaje = "Hola Mundo"
+        mensaje = "GitHub Info:\n" + mensaje
 
         # Envía el mensaje al canal
         if channel:
