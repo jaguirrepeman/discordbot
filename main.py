@@ -32,18 +32,20 @@ def keep_alive():
 
 # Variable global para la tarea
 bg_task = None
+task_lock = asyncio.Lock()  # Añade un bloqueo para evitar múltiples ejecuciones
 
 @client.event
 async def on_ready():
     print(f'Bot conectado como {client.user}')
     
     global bg_task
-    # Verifica si la tarea ya se está ejecutando
-    if bg_task is None or bg_task.done():  # Si la tarea no existe o ha terminado
-        print("Iniciando la tarea de procesamiento.")
-        bg_task = client.loop.create_task(procesar_y_enviar_mensaje())
-    else:
-        print("La tarea ya está corriendo, no se iniciará de nuevo.")
+    # Usamos el lock para garantizar que no se lanza más de una tarea
+    async with task_lock:
+        if bg_task is None or bg_task.done():  # Si la tarea no existe o ha terminado
+            print("Iniciando la tarea de procesamiento.")
+            bg_task = client.loop.create_task(procesar_y_enviar_mensaje())
+        else:
+            print("La tarea ya está corriendo, no se iniciará de nuevo.")
 
 # Funcion de procesamiento que quieres ejecutar periodicamente
 async def procesar_y_enviar_mensaje():
