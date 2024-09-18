@@ -6,8 +6,6 @@ from pokemon_functions import get_new_pokemons
 from flask import Flask
 import threading
 
-
-
 # Configura el cliente de Discord
 intents = discord.Intents.default()
 intents.messages = True  # Permiso para leer mensajes
@@ -22,7 +20,6 @@ TOKEN = os.getenv('TOKEN')
 app = Flask(__name__)
 
 @app.route('/', methods=['GET', 'HEAD'])
-
 def home():
     return "Bot is running!", 200
 
@@ -32,37 +29,43 @@ def run():
 def keep_alive():
     thread = threading.Thread(target=run)
     thread.start()
-    
+
 @client.event
 async def on_ready():
     print(f'Bot conectado como {client.user}')
-    client.bg_task = client.loop.create_task(procesar_y_enviar_mensaje())
+    if not hasattr(client, 'bg_task'):
+        # Solo inicia la tarea si no se ha iniciado previamente
+        client.bg_task = client.loop.create_task(procesar_y_enviar_mensaje())
+        print("Tarea de procesamiento iniciada")
 
-
-# Funcion de procesamiento que quieres ejecutar periodicamente
+# Función de procesamiento que quieres ejecutar periódicamente
 async def procesar_y_enviar_mensaje():
     await client.wait_until_ready()
     print("El bot está listo y ejecutando la tarea de procesamiento")
     channel = client.get_channel(MY_CHANNEL_ID)
 
     while not client.is_closed():
-        print("Procesando Pokémon...")
-        # Cargar la lista de Pokémon
-        mensaje = get_new_pokemons()
-        mensaje = "GitHub Info:\n" + mensaje
+        try:
+            print("Procesando Pokémon...")
+            # Cargar la lista de Pokémon
+            mensaje = get_new_pokemons()
+            mensaje = "GitHub Info:\n" + mensaje
 
-        # Envía el mensaje al canal
-        if channel:
-            await channel.send(mensaje)
-        else:
-            print("No se pudo encontrar el canal.")
+            # Envía el mensaje al canal
+            if channel:
+                await channel.send(mensaje)
+            else:
+                print("No se pudo encontrar el canal.")
 
-        # Espera 10 segundos antes de ejecutar de nuevo el procesamiento
-        await asyncio.sleep(60*10)  # Ajusta el tiempo según tus necesidades
+            # Espera 10 minutos antes de ejecutar de nuevo el procesamiento
+            await asyncio.sleep(60*10)
+        
+        except Exception as e:
+            print(f"Ocurrió un error: {e}")
+            await asyncio.sleep(60)  # Espera un minuto antes de reintentar
 
 # Mantén el bot vivo utilizando Flask
 keep_alive()
 
 # Ejecuta el bot
 client.run(TOKEN)
-print("HELLO")
