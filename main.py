@@ -24,9 +24,7 @@ def home():
     return "Bot is running!", 200
 
 def run():
-    # Flask escuchando en el puerto asignado por Koyeb
-    port = int(os.environ.get('PORT', 8000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=int(os.getenv("PORT", 8000)))
 
 def keep_alive():
     thread = threading.Thread(target=run)
@@ -37,13 +35,13 @@ bg_task = None
 
 @client.event
 async def on_ready():
-    global bg_task
     print(f'Bot conectado como {client.user}')
     
-    # Inicia la tarea solo si no está ya corriendo
-    if bg_task is None or bg_task.done():
+    global bg_task
+    # Verifica si la tarea ya se está ejecutando
+    if bg_task is None or bg_task.done():  # Si la tarea no existe o ha terminado
+        print("Iniciando la tarea de procesamiento.")
         bg_task = client.loop.create_task(procesar_y_enviar_mensaje())
-        print("Tarea de procesamiento iniciada.")
     else:
         print("La tarea ya está corriendo, no se iniciará de nuevo.")
 
@@ -60,13 +58,13 @@ async def procesar_y_enviar_mensaje():
             mensaje = get_new_pokemons()
             if mensaje != "":
                 mensaje = "GitHub Info:\n" + mensaje
-
+    
                 # Envía el mensaje al canal
                 if channel:
                     await channel.send(mensaje)
                 else:
                     print("No se pudo encontrar el canal.")
-
+    
             # Espera 10 minutos antes de ejecutar de nuevo el procesamiento
             await asyncio.sleep(60 * 10)  # 10 minutos
 
@@ -75,8 +73,16 @@ async def procesar_y_enviar_mensaje():
             # Si ocurre un error, espera 1 minuto antes de intentar de nuevo
             await asyncio.sleep(60)
 
-# Mantén el bot vivo utilizando Flask
-keep_alive()
+# Evita que el puerto 8000 ya esté en uso
+if __name__ == "__main__":
+    try:
+        # Mantén el bot vivo utilizando Flask
+        keep_alive()
 
-# Ejecuta el bot
-client.run(TOKEN)
+        # Ejecuta el bot
+        client.run(TOKEN)
+    except OSError as e:
+        if "Address already in use" in str(e):
+            print("El puerto 8000 ya está en uso. Verifica si hay otro proceso corriendo.")
+        else:
+            raise e
