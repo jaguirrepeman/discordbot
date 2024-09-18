@@ -2,6 +2,7 @@ import discord
 import asyncio
 import sys
 import os
+import random  # Para asignar puertos aleatorios
 from pokemon_functions import get_new_pokemons
 from flask import Flask
 import threading
@@ -24,7 +25,9 @@ def home():
     return "Bot is running!", 200
 
 def run():
-    app.run(host='0.0.0.0', port=8000)
+    # Selecciona un puerto aleatorio entre 8000 y 9000
+    port = random.randint(8000, 9000)
+    app.run(host='0.0.0.0', port=port)
 
 def keep_alive():
     thread = threading.Thread(target=run)
@@ -32,14 +35,14 @@ def keep_alive():
 
 # Variable global para la tarea
 bg_task = None
-task_lock = asyncio.Lock()  # Añade un bloqueo para evitar múltiples ejecuciones
+task_lock = asyncio.Lock()  # Añadir un lock para asegurar que la tarea no se ejecute varias veces
 
 @client.event
 async def on_ready():
     print(f'Bot conectado como {client.user}')
     
     global bg_task
-    # Usamos el lock para garantizar que no se lanza más de una tarea
+    # Utilizamos el lock para evitar que múltiples tareas se ejecuten al mismo tiempo
     async with task_lock:
         if bg_task is None or bg_task.done():  # Si la tarea no existe o ha terminado
             print("Iniciando la tarea de procesamiento.")
