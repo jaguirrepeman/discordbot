@@ -2,7 +2,6 @@ import discord
 import asyncio
 import sys
 import os
-import random  # Para asignar puertos aleatorios
 from pokemon_functions import get_new_pokemons
 from flask import Flask
 import threading
@@ -25,8 +24,8 @@ def home():
     return "Bot is running!", 200
 
 def run():
-    # Selecciona un puerto aleatorio entre 8000 y 9000
-    port = random.randint(8000, 9000)
+    # Flask escuchando en el puerto asignado por Koyeb
+    port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port)
 
 def keep_alive():
@@ -35,20 +34,18 @@ def keep_alive():
 
 # Variable global para la tarea
 bg_task = None
-task_lock = asyncio.Lock()  # Añadir un lock para asegurar que la tarea no se ejecute varias veces
 
 @client.event
 async def on_ready():
+    global bg_task
     print(f'Bot conectado como {client.user}')
     
-    global bg_task
-    # Utilizamos el lock para evitar que múltiples tareas se ejecuten al mismo tiempo
-    async with task_lock:
-        if bg_task is None or bg_task.done():  # Si la tarea no existe o ha terminado
-            print("Iniciando la tarea de procesamiento.")
-            bg_task = client.loop.create_task(procesar_y_enviar_mensaje())
-        else:
-            print("La tarea ya está corriendo, no se iniciará de nuevo.")
+    # Inicia la tarea solo si no está ya corriendo
+    if bg_task is None or bg_task.done():
+        bg_task = client.loop.create_task(procesar_y_enviar_mensaje())
+        print("Tarea de procesamiento iniciada.")
+    else:
+        print("La tarea ya está corriendo, no se iniciará de nuevo.")
 
 # Funcion de procesamiento que quieres ejecutar periodicamente
 async def procesar_y_enviar_mensaje():
@@ -63,13 +60,13 @@ async def procesar_y_enviar_mensaje():
             mensaje = get_new_pokemons()
             if mensaje != "":
                 mensaje = "GitHub Info:\n" + mensaje
-    
+
                 # Envía el mensaje al canal
                 if channel:
                     await channel.send(mensaje)
                 else:
                     print("No se pudo encontrar el canal.")
-    
+
             # Espera 10 minutos antes de ejecutar de nuevo el procesamiento
             await asyncio.sleep(60 * 10)  # 10 minutos
 
