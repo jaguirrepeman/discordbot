@@ -28,9 +28,10 @@ def home():
     return "Bot is running", 200
 
 def run_flask():
-    port = int(os.environ.get('PORT', 8080))  # Usar un puerto diferente si 8000 está ocupado
+    #port = int(os.environ.get('PORT', 8080))  # Usar un puerto diferente si 8000 está ocupado
     print(f"Servidor Flask está ejecutándose en el puerto {port}...")
-    app.run(port=port)
+    #app.run(port=port)
+    app.run()
 
 # Función que se ejecuta cuando el bot está listo
 @client.event
