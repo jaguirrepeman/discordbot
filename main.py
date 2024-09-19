@@ -1,48 +1,65 @@
 import discord
 from discord.ext import tasks
+import requests
 import asyncio
+from flask import Flask
+from threading import Thread
+import os
+from pokemon_functions import get_new_pokemons
 
+# Configuración
 # ID del canal en el que quieres escribir
-MY_CHANNEL_ID = os.getenv('MY_CHANNEL_ID')
+MY_CHANNEL_ID = int(os.getenv('MY_CHANNEL_ID'))
 TOKEN = os.getenv('TOKEN')
+
+# Verificar si las variables de entorno están cargadas correctamente
 print(f"TOKEN: {TOKEN}")
 print(f"MY_CHANNEL_ID: {MY_CHANNEL_ID}")
-if not MY_CHANNEL_ID:
-    print("Error: MY_CHANNEL_ID no está definido")
-else:
-    MY_CHANNEL_ID = int(MY_CHANNEL_ID)  # Asegúrate de que sea un entero
 
 intents = discord.Intents.default()
 intents.messages = True
 
 client = discord.Client(intents=intents)
 
+# Flask app para la salud del servidor
+app = Flask(__name__)
+
+@app.route('/', methods=['GET', 'HEAD'])
+def home():
+    return "Bot is running", 200
+
+def run_flask():
+    print("Servidor Flask está ejecutándose...")
+    app.run(host='0.0.0.0', port=8000)
+
+# Función que se ejecuta cuando el bot está listo
 @client.event
 async def on_ready():
     print(f'Bot conectado como {client.user}')
-    procesar_pokemons.start()  # Inicia la tarea asíncrona periódica
+    procesar_pokemons.start()  # Inicia la tarea periódica de procesamiento
+    print('Iniciando la tarea de procesamiento.')
+    # Inicia el servidor Flask en un hilo separado
+    Thread(target=run_flask).start()
 
+# Tarea asíncrona que se ejecuta cada 10 minutos
 @tasks.loop(minutes=10)
 async def procesar_pokemons():
     channel = client.get_channel(MY_CHANNEL_ID)
     if channel:
         print('Procesando Pokémon...')
-        # Aquí puedes implementar la lógica de obtener y enviar mensajes
-        mensajes = await obtener_mensajes_nuevos(channel)  # Función que obtiene nuevos mensajes de Pokémon
-        if mensajes:
-            for mensaje in mensajes:
-                await channel.send(mensaje)
+        mensaje = get_new_pokemons()
+        if mensaje != "":
+            mensaje = "GitHub Info:\n" + mensaje
+
+            # Envía el mensaje al canal
+            await channel.send(mensaje)
+            print(f"Mensaje enviado al canal {channel.name}")
         else:
-            print('No hay nuevos Pokémon para enviar.')
+            print("No hay nuevos Pokémon para enviar.")
+
     else:
         print('No se encontró el canal.')
 
-async def obtener_mensajes_nuevos(channel):
-    # Implementa la lógica para obtener nuevos Pokémon o mensajes
-    # Esto es solo un ejemplo
-    messages = await channel.history(limit=10).flatten()
-    nuevos_pokemons = []  # Aquí añades los nuevos Pokémon si los hay
-    return nuevos_pokemons
 
+# Arranca el bot de Discord
 client.run(TOKEN)
-
