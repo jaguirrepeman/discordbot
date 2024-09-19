@@ -97,18 +97,18 @@ async def procesar_y_enviar_mensaje():
             # Si ocurre un error, espera 1 minuto antes de intentar de nuevo
             await asyncio.sleep(60)
 
-# Evita que el puerto 8000 ya esté en uso
-if __name__ == "__main__":
-    try:
-        # Mantén el bot vivo utilizando Flask
-        keep_alive()
 
-        # Ejecuta el bot
-        print("Iniciando el bot de Discord...")
-        client.run(TOKEN)
-    except OSError as e:
-        if "Address already in use" in str(e):
-            print("El puerto 8000 ya está en uso. Verifica si hay otro proceso corriendo.")
-        else:
-            print(f"Error inesperado: {e}")
-            raise e
+try:
+    print("Comienzo del programa")
+    # Mantén el bot vivo utilizando Flask
+    keep_alive()
+    
+    # Ejecuta el bot
+    print("Iniciando el bot de Discord...")
+    client.run(TOKEN)
+except OSError as e:
+    if "Address already in use" in str(e):
+        print("El puerto 8000 ya está en uso. Verifica si hay otro proceso corriendo.")
+    else:
+        print(f"Error inesperado: {e}")
+        raise e
