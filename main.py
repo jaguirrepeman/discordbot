@@ -4,6 +4,10 @@ import os
 from pokemon_functions import get_new_pokemons
 from flask import Flask
 import threading
+import logging
+
+# Habilitar logging para la librería discord
+logging.basicConfig(level=logging.DEBUG)
 
 # Configura el cliente de Discord
 intents = discord.Intents.default()
@@ -92,6 +96,7 @@ async def procesar_y_enviar_mensaje():
             print(f"Error en la tarea de procesamiento: {e}")
             # Si ocurre un error, espera 1 minuto antes de intentar de nuevo
             await asyncio.sleep(60)
+
 # Evita que el puerto 8000 ya esté en uso
 if __name__ == "__main__":
     try:
@@ -107,4 +112,3 @@ if __name__ == "__main__":
         else:
             print(f"Error inesperado: {e}")
             raise e
-
