@@ -97,7 +97,7 @@ async def procesar_y_enviar_mensaje():
             # Si ocurre un error, espera 1 minuto antes de intentar de nuevo
             await asyncio.sleep(60)
 
-
+# Código para ejecutar el servidor Flask y el bot de Discord en paralelo
 try:
     print("Comienzo del programa")
     # Mantén el bot vivo utilizando Flask
