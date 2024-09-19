@@ -8,7 +8,6 @@ import os
 from pokemon_functions import get_new_pokemons
 
 # Configuración
-# ID del canal en el que quieres escribir
 MY_CHANNEL_ID = int(os.getenv('MY_CHANNEL_ID'))
 TOKEN = os.getenv('TOKEN')
 
@@ -29,8 +28,9 @@ def home():
     return "Bot is running", 200
 
 def run_flask():
-    print("Servidor Flask está ejecutándose...")
-    app.run(host='0.0.0.0', port=8000)
+    port = int(os.environ.get('PORT', 8080))  # Usar un puerto diferente si 8000 está ocupado
+    print(f"Servidor Flask está ejecutándose en el puerto {port}...")
+    app.run(host='0.0.0.0', port=port)
 
 # Función que se ejecuta cuando el bot está listo
 @client.event
@@ -59,7 +59,6 @@ async def procesar_pokemons():
 
     else:
         print('No se encontró el canal.')
-
 
 # Arranca el bot de Discord
 client.run(TOKEN)
