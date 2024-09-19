@@ -2,7 +2,7 @@ import discord
 import asyncio
 import sys
 import os
-from pokemon_functions import get_new_pokemons
+from pokemon_functions import get_new_pokemons  # Asegúrate que esta función funcione bien
 from flask import Flask
 import threading
 
@@ -13,8 +13,20 @@ intents.messages = True  # Permiso para leer mensajes
 client = discord.Client(intents=intents)
 
 # ID del canal en el que quieres escribir
-MY_CHANNEL_ID = int(os.getenv('MY_CHANNEL_ID'))
+MY_CHANNEL_ID = os.getenv('MY_CHANNEL_ID')
 TOKEN = os.getenv('TOKEN')
+
+# Verificar si las variables de entorno están cargadas correctamente
+print(f"TOKEN: {TOKEN}")
+print(f"MY_CHANNEL_ID: {MY_CHANNEL_ID}")
+
+if not MY_CHANNEL_ID:
+    print("Error: MY_CHANNEL_ID no está definido")
+else:
+    MY_CHANNEL_ID = int(MY_CHANNEL_ID)  # Asegúrate de que sea un entero
+
+if not TOKEN:
+    print("Error: TOKEN no está definido")
 
 # Crea el servidor Flask para mantener activo el bot
 app = Flask(__name__)
@@ -24,9 +36,11 @@ def home():
     return "Bot is running!", 200
 
 def run():
+    print("Servidor Flask está ejecutándose...")
     app.run(host='0.0.0.0', port=int(os.getenv("PORT", 8000)))
 
 def keep_alive():
+    print("Iniciando el servidor Flask en un hilo separado")
     thread = threading.Thread(target=run)
     thread.start()
 
@@ -49,23 +63,30 @@ async def on_ready():
 async def procesar_y_enviar_mensaje():
     await client.wait_until_ready()
     print("El bot está listo y ejecutando la tarea de procesamiento")
+    
     channel = client.get_channel(MY_CHANNEL_ID)
+    if not channel:
+        print(f"Error: No se pudo encontrar el canal con ID {MY_CHANNEL_ID}")
+        return
 
     while not client.is_closed():
         try:
             print("Procesando Pokémon...")
             # Cargar la lista de Pokémon
             mensaje = get_new_pokemons()
+            print(f"Mensaje generado: {mensaje}")
+
             if mensaje != "":
                 mensaje = "GitHub Info:\n" + mensaje
     
                 # Envía el mensaje al canal
-                if channel:
-                    await channel.send(mensaje)
-                else:
-                    print("No se pudo encontrar el canal.")
+                await channel.send(mensaje)
+                print(f"Mensaje enviado al canal {channel.name}")
+            else:
+                print("No hay nuevos Pokémon para enviar.")
     
             # Espera 10 minutos antes de ejecutar de nuevo el procesamiento
+            print("Esperando 10 minutos para procesar de nuevo.")
             await asyncio.sleep(60 * 10)  # 10 minutos
 
         except Exception as e:
@@ -80,9 +101,12 @@ if __name__ == "__main__":
         keep_alive()
 
         # Ejecuta el bot
+        print("Iniciando el bot de Discord...")
         client.run(TOKEN)
     except OSError as e:
         if "Address already in use" in str(e):
             print("El puerto 8000 ya está en uso. Verifica si hay otro proceso corriendo.")
         else:
+            print(f"Error inesperado: {e}")
             raise e
+
