@@ -15,7 +15,7 @@ def read_captured_pokemon():
     url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
     pokemon_captured = pd.read_csv(url)\
         .loc[lambda x: ~x.name.str.contains(r"\(Mega\)")]\
-        .rename(columns = {"level": "level_captured"})\
+        .rename(columns = {"level": "level_captured", "name": "complete_name"})\
         .drop("number", axis = 1)
     return pokemon_captured
 
@@ -96,7 +96,7 @@ def filter_spawns(spawns_df, min_level = 20):
   pokemon_captured = read_captured_pokemon()
   future_spawns_df = spawns_df\
     .loc[lambda x: pd.to_datetime(x.despawn_time) >= datetime.now()]\
-    .merge(pokemon_captured, how = "left", on = "name")\
+    .merge(pokemon_captured, how = "left", on = "complete_name")\
     .assign(level = lambda x: x.level.astype(float))\
     .loc[lambda x: ~((x.iv_max == 100)&(x.level_captured >= x.level))]\
     .sort_values("despawn_time")
