@@ -41,8 +41,7 @@ def parse_spawn(msj):
         name_html = msj['embeds'][0]['fields'][0]['name']
 
         # Expresión regular para encontrar el nombre y el genero del Pokémon
-        patron = r"\*\*(\w+)\*\*(?: \*\*\((.+?)\)\*\*)?.*?(<:(female|male|genderless):\d+>)?"
-        patron = r"\*\*(\w+)\*\*(?: \*\*\((.+?)\)\*\*)?.*?<:(female|male|genderless):\d+>"
+        patron = r"\*\*(.+?)\*\*(?: \*\*\((.+?)\)\*\*)?.*?<:(female|male|genderless):\d+>"
 
         # Buscar el nombre en la línea
         pokemon = re.search(patron, name_html)
@@ -89,23 +88,27 @@ def parse_spawn(msj):
 
         return df
     except:
-        print(msj)
+        print(name_html)
 
 def filter_spawns(spawns_df, min_level = 20):
   
-  pokemon_captured = read_captured_pokemon()
-  future_spawns_df = spawns_df\
-    .loc[lambda x: pd.to_datetime(x.despawn_time) >= datetime.now()]\
-    .merge(pokemon_captured, how = "left", on = "complete_name")\
-    .assign(level = lambda x: x.level.astype(float))\
-    .loc[lambda x: ~((x.iv_max == 100)&(x.level_captured >= x.level))]\
-    .sort_values("despawn_time")
+    pokemon_captured = read_captured_pokemon()
+
+    future_spawns_df = spawns_df\
+        .loc[lambda x: pd.to_datetime(x.despawn_time) >= datetime.now()]\
+        .merge(pokemon_captured, how = "left", on = "complete_name")\
+        .assign(level = lambda x: x.level.astype(float))\
+        .loc[lambda x: ~((x.iv_max == 100)&(x.level_captured >= x.level))]\
+        .assign(alreay_captured_100 = lambda x: x.level_captured.notna()&(x.iv_max == 100)&(~x.level.isin([30,35])))\
+        .loc[lambda x: ~x.alreay_captured_100]\
+        .sort_values("despawn_time")
+
   
-  if min_level is not None:
-    future_spawns_df = future_spawns_df\
-      .loc[lambda x: x.level >= min_level]
+    if min_level is not None:
+        future_spawns_df = future_spawns_df\
+            .loc[lambda x: x.level >= min_level]
   
-  return future_spawns_df
+    return future_spawns_df
 
 def imprimir_despawn_info(df):
     
@@ -134,7 +137,6 @@ def imprimir_despawn_info(df):
 
 def get_new_pokemons():
     CHANNEL_ID = os.getenv('CHANNEL_ID')
-    print(CHANNEL_ID)
     spawns_json = check_spawns(CHANNEL_ID)
     spawns_df = pd.concat([parse_spawn(spawns_json[i]) for i in range(len(spawns_json))])
     future_spawns_df = filter_spawns(spawns_df)
