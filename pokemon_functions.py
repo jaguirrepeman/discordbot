@@ -93,16 +93,45 @@ def parse_spawn(msj):
 def filter_spawns(spawns_df, min_level = 20):
   
     pokemon_captured = read_captured_pokemon()
-
-    future_spawns_df = spawns_df\
-        .loc[lambda x: pd.to_datetime(x.despawn_time) >= datetime.now()]\
-        .merge(pokemon_captured, how = "left", on = "complete_name")\
-        .assign(level = lambda x: x.level.astype(float))\
-        .loc[lambda x: ~((x.iv_max == 100)&(x.level_captured >= x.level))]\
-        .assign(alreay_captured_100 = lambda x: x.level_captured.notna()&(x.iv_max == 100)&(~x.level.isin([30,35])))\
-        .loc[lambda x: ~x.alreay_captured_100]\
+    
+    # Definimos los rangos de niveles
+    def get_level_range(level):
+        if 10 <= level <= 29:
+            return 1
+        elif 30 <= level <= 34:
+            return 2
+        elif level == 35:
+            return 3
+        elif 36 <= level <= 44:
+            return 4
+        elif level >= 45:
+            return 5
+        return 0  # Por si hay niveles fuera del rango
+    
+    future_spawns_df = (
+        spawns_df
+        # Filtramos por los Pokémon cuyo tiempo de aparición aún no ha pasado
+        .loc[lambda x: pd.to_datetime(x.despawn_time) >= datetime.now()]
+        # Combinamos con los Pokémon capturados
+        .merge(pokemon_captured, how="left", on="complete_name")
+        # Convertimos los niveles a tipo flotante
+        .assign(level=lambda x: x.level.astype(float))
+        # Eliminamos los Pokémon 100% IV capturados con un nivel igual o superior
+        .loc[lambda x: ~((x.iv_max == 100) & (x.level_captured >= x.level))]
+        # Asignamos una columna indicando si ya se capturó un 100% fuera de niveles clave
+        .assign(already_captured_100=lambda x: x.level_captured.notna() & (x.iv_max == 100) & (~x.level.isin([30, 35])))
+        # Filtramos los ya capturados
+        .loc[lambda x: ~x.already_captured_100]
+        # Asignamos rangos a los niveles actuales y capturados
+        .assign(
+            level_range=lambda x: x.level.apply(get_level_range),
+            level_range_captured=lambda x: x.level_captured.fillna(0).apply(get_level_range)
+        )
+        # Filtramos los Pokémon que no están en un rango superior al capturado
+        .loc[lambda x: x.level_range > x.level_range_captured]
+        # Ordenamos por el tiempo de desaparición
         .sort_values("despawn_time")
-
+    )
   
     if min_level is not None:
         future_spawns_df = future_spawns_df\
