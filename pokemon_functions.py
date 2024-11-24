@@ -102,10 +102,12 @@ def filter_spawns(spawns_df, min_level = 20):
             return 2
         elif level == 35:
             return 3
-        elif 36 <= level <= 44:
-            return 4
-        elif level >= 45:
+        elif 36 <= level <= 39:
+            return 2
+        elif 40 <= level <= 44:
             return 5
+        elif level >= 45:
+            return 6
         return 0  # Por si hay niveles fuera del rango
     
     future_spawns_df = (
